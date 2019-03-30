@@ -1,5 +1,5 @@
 {
-    "sleep": 5000,
+    "sleep": 10,
     "host" : "localhost",
     "port": 69
 }

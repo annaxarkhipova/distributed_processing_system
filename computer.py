@@ -9,7 +9,7 @@ with open("config_computer.json", "r") as read_file:
 conn = pika.BlockingConnection(pika.ConnectionParameters(host='localhost')) #data['host'], port=data['port'])
 channel = conn.channel()
 
-channel.queue_declare(queue='task_queue')
+channel.queue_declare(queue='task_queue', durable=True)
 
 
 
@@ -19,13 +19,15 @@ def callback_to_request(ch, method, properties, body):
     print('Start PDF processing')
     sleeping = data['sleep']
     time.sleep(sleeping)
+    print('Finish PDF processing')
 
 
     ch.basic_publish(exchange='',
                      routing_key=properties.reply_to,
-                     properties=pika.BasicProperties(correlation_id= \
+                     properties=pika.BasicProperties(delivery_mode=2,  # сообщения не будут утеряны
+                                                     correlation_id= \
                                                      properties.correlation_id),
-                     body='Finished')
+                     body='finished')
 
     # Если подписчик прекратил работу и не отправил подтверждение,
     # RabbitMQ поймет, что сообщение не было обработано, и передаст его другому подписчику

@@ -1,5 +1,6 @@
 import json
 import pika
+import uuid
 
 with open("config_client.json", "r") as read_file:
     data = json.load(read_file)
@@ -13,7 +14,7 @@ class System:
         self.channel = self.connection.channel()
 
         # durable - очередь не будет потеряна при падении сервера
-        result = self.channel.queue_declare(exclusive=True)
+        result = self.channel.queue_declare(durable=True)
         self.callback_queue = result.method.queue
 
         self.channel.basic_consume(self.on_response, no_ack=True,
@@ -26,13 +27,13 @@ class System:
 
     def call(self):
         self.response = None
+        self.corr_id = str(uuid.uuid4()) # уникальный ID для очереди
         self.channel.basic_publish(exchange='',
                                    routing_key='task_queue',
-                                   delivery_mode = 2, # сообщения не будут утеряны
                                    properties=pika.BasicProperties(
                                          reply_to=self.callback_queue,
-                                         correlation_id=self.corr_id,
-                                   body='Please, make a count for me and bring it back!'))
+                                         correlation_id=self.corr_id,),
+                                   body='Please, make a count for me and bring it back!')
         while self.response is None:
             self.connection.process_data_events()
         return self.response
